@@ -6,5 +6,12 @@
   "icons": {
     "48": "images/icon.svg",
     "96": "images/icon.svg"
-  }
+  },
+
+  "content_scripts": [
+    {
+      "matches": [ "*://steamcommunity.com/tradeoffer/*" ],
+      "js": [ "scripts/script.js" ]
+    }
+  ]
 }
