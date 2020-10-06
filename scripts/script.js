@@ -24,11 +24,18 @@ function disableWarnings() {
     console.log("Disabled trade warnings.");
 }
 
+function hideInfo() {
+    //Removes the trade partner information at the top of the window
+    document.body.getElementsByClassName('trade_partner_header')[0].remove();
+    console.log("Removed trade partner info.")
+}
+
 function onLoad() {
     //Called when the page is loaded
     endTutorial();
     selectGame();
     disableWarnings();
+    hideInfo();
 }
 
 document.addEventListener("DOMContentLoaded", onLoad());
