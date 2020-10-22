@@ -39,3 +39,17 @@ function onLoad() {
 }
 
 document.addEventListener("DOMContentLoaded", onLoad());
+
+function itemsChanged(mutationList, observer) {
+    //When the items in the change trade
+    if (document.getElementById("your_slots").contains(mutationList[0].target)) {
+        //Recount metal in my inventory
+    }
+    else {
+        //Recount metal in their inventory
+    }
+}
+
+const observer = new MutationObserver(itemsChanged);
+
+observer.observe(document.getElementById("trade_area"), { subtree: true, childList: true });
