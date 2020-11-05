@@ -6,7 +6,8 @@ const countMetal = new Function("items", "return items.ref * 9 + items.rec * 3 +
 const plural = new Function("name", "count", "if (count!=1) {return count + ' ' + name+'s'} return count + ' ' + name")
 const toRef = new Function("scrap", "return Math.round(((scrap % 9 * 0.11) + (scrap - scrap % 9) / 9) * 100) / 100")
 
-const inventoryScroll = new window.Function("e", "if (e.target == document.body) {" +
+const inventoryScroll = new window.Function("e", "if ((e.target != document.querySelector('#filter_control')) &&" +
+    "(e.target != document.querySelector('#trade_offer_note'))) { " +
     "if (e.key == 'a') {InventoryPreviousPage()}" +
     "else if (e.key == 'd') {InventoryNextPage()}}")
 
