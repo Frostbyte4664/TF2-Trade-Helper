@@ -10,7 +10,8 @@ const inventoryScroll = new window.Function("e", "if ((e.target != document.quer
     "(e.target != document.querySelector('#trade_offer_note'))) { " +
     "if (e.key == 'a') {InventoryPreviousPage()}" +
     "else if (e.key == 'd') {InventoryNextPage()}" +
-    "else if (e.key == 'c') {ToggleReady(!UserYou.bReady)}}")
+    "else if (e.key == 'c') {ToggleReady(!UserYou.bReady)}" +
+    "else if (e.key == 'v') {ConfirmTradeOffer()}}")
 
 function countItems(inventory, inTrade) {
     let result = { keys: 0, ref: 0, rec: 0, scrap: 0, items: 0 }
