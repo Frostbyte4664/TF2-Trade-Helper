@@ -11,7 +11,7 @@
   "content_scripts": [
     {
       "matches": [ "*://steamcommunity.com/tradeoffer/*" ],
-      "js": [ "scripts/script.js" ]
+      "js": [ "scripts/tradeoffer.js" ]
     }
   ]
 }
