@@ -16,6 +16,8 @@ const hotkeys = new window.Function("e", "if ((e.target != document.querySelecto
     "else if (e.key == 'd') {InventoryNextPage()}" +
     "else if (e.key == 'c') {ToggleReady(!UserYou.bReady)}" +
     "else if (e.key == 'v') {ConfirmTradeOffer()}" +
+    "else if (e.key == 'z') {DeclineTradeOffer()}" +
+    "else if (e.key == 't') {DismissTradeOfferWindow()}" +
     "else if (e.key == 'q') {if (g_ActiveUser == UserYou) {" +
     "SelectInventoryFromUser(UserThem, g_ActiveInventory.appid, g_ActiveInventory.contextid)}" +
     "else {SelectInventoryFromUser(UserYou, g_ActiveInventory.appid, g_ActiveInventory.contextid)}" +
