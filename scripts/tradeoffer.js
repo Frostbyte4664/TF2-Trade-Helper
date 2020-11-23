@@ -6,9 +6,9 @@ const getItemFromElement = new window.Function("element", "return element.rgItem
 const getUser = new window.Function("isThem", "if (isThem){return UserThem} return UserYou")
 const removeItem = new window.Function("elItem", "MoveItemToInventory(elItem)")
 
-const countMetal = new Function("items", "return items.ref * 9 + items.rec * 3 + items.scrap")
-const plural = new Function("name", "count", "if (count!=1) {return count + ' ' + name+'s'} return count + ' ' + name")
-const toRef = new Function("scrap", "return Math.round(((scrap % 9 * 0.11) + (scrap - scrap % 9) / 9) * 100) / 100")
+const countMetal = function (items) { return items.ref * 9 + items.rec * 3 + items.scrap }
+const plural = function (name, count) { if (count != 1) { return count + ' ' + name + 's' } return count + ' ' + name }
+const toRef = function (scrap) { return Math.round(((scrap % 9 * 0.11) + (scrap - scrap % 9) / 9) * 100) / 100 }
 
 const hotkeys = new window.Function("e", "if ((e.target != document.querySelector('#filter_control')) &&" +
     "(e.target != document.querySelector('#trade_offer_note'))) { " +
@@ -78,8 +78,8 @@ function itemsChanged(mutationList) {
 function onLoad() {
     let endTutorial = new window.Function("Tutorial.EndTutorial()")
     let selectGame = new window.Function("SelectInventory(440, 2)")
-    let hideInfo = new Function("document.querySelector('.trade_partner_header').remove()")
     let readOnly = new window.Function("return g_bReadOnly")
+    let hideInfo = function () { document.querySelector('.trade_partner_header').remove() }
 
     let disableWarnings = new window.Function("CModal.DismissActiveModal();" +
         "ToggleReady = function (ready) { UserYou.bReady = ready;" +
