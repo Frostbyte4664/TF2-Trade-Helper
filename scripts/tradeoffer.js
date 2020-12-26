@@ -146,3 +146,91 @@ function onLoad() {
     }, 3000);
 }
 document.addEventListener("DOMContentLoaded", onLoad());
+
+
+//EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+getActiveSlots = w(function () {
+    let slots;
+    if (g_ActiveUser == UserYou) {
+        slots = document.querySelector("#your_slots");
+    }
+    else {
+        slots = document.querySelector("#their_slots");
+    }
+    return slots;
+});
+
+getItemName = w(function (elItem) {
+    return elItem.rgItem.name;
+});
+
+itemToInv = w(function (elItem) {
+    MoveItemToInventory(elItem);
+});
+
+function removeFromTrade(slots, index, names, match) {
+    /*Removes items (With a delay because removing too many items at once breaks the page)...
+     Within the specified trade slots (slots)
+     Starting at the specified slot index (index)
+     Look for items whose item names are in string array names (names)
+     Remove items with (true) or without (false) matching names (match)*/
+    setTimeout(function () {
+        if (slots.children[index].classList.contains("has_item")) {
+            if (match == names.includes(getItemName(slots.children[index].firstChild.firstChild))) {
+                itemToInv(slots.children[index].firstChild.firstChild);
+                removeFromTrade(slots, index, names, match);
+            }
+            else {
+                removeFromTrade(slots, index + 1, names, match);
+            }
+        }
+    }, 75);
+}
+
+document.querySelector("#inventory_displaycontrols").innerHTML = "<h3>Add or Remove Items:</h3><br/>" +
+    "<div class='mom'>" +
+    "Keys: <input id='addKeys' type='number' min='0' placeholder='1' step='1' class='filter_search_box'/>" +
+    "Ref: <input id='addMetal' type='number' min='0' placeholder='1.11' step='0.01' class='filter_search_box'/>" +
+    "<button id='addItems' class='pagecontrol_element pagebtn'>+</button><br/>" +
+    "</div><div class='mom'>" +
+    "Remove:<button id='removeAll' class='pagecontrol_element pagebtn'>All</button>" +
+    "<button id='removeKeys' class='pagecontrol_element pagebtn'>Keys</button>" +
+    "<button id='removeMetal' class='pagecontrol_element pagebtn'>Metal</button>" +
+    "<button id='removeItems' class='pagecontrol_element pagebtn'>Items</button>"
+"</div>"
+document.querySelector("style").sheet.insertRule(".mom{display:flex;align-items:center}", 0);
+document.querySelector("style").sheet.insertRule(".mom *{flex-grow:1;margin:5px}", 0);
+
+
+document.getElementById("addItems").onclick = function () {
+    addItems(3);
+};
+document.getElementById("removeAll").onclick = function () {
+    removeFromTrade(getActiveSlots(), 0, [], false)
+};
+document.getElementById("removeKeys").onclick = function () {
+    removeFromTrade(getActiveSlots(), 0, ["Mann Co. Supply Crate Key"], true)
+};
+document.getElementById("removeMetal").onclick = function () {
+    removeFromTrade(getActiveSlots(), 0, ["Refined Metal", "Reclaimed Metal", "Scrap Metal"], true);
+};
+document.getElementById("removeItems").onclick = function () {
+    removeFromTrade(getActiveSlots(), 0, ["Mann Co. Supply Crate Key", "Refined Metal", "Reclaimed Metal", "Scrap Metal"], false);
+};
+
+function addItems(inv) {
+    keys = document.getElementById("addKeys").value;
+    metal = document.getElementById("addMetal").value;
+    if (keys == "") {
+        document.getElementById("addKeys").value = 0;
+        keys = 0;
+    }
+    else {
+        keys = Math.trunc(keys);
+        document.getElementById("addKeys").value = keys;
+    }
+    if (metal == "") {
+        document.getElementById("addMetal").value = 0.00;
+        metal = 0;
+    }
+}
