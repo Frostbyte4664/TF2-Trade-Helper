@@ -203,7 +203,7 @@ document.querySelector("style").sheet.insertRule(".mom *{flex-grow:1;margin:5px}
 
 
 document.getElementById("addItems").onclick = function () {
-    addItems(3);
+    addItems();
 };
 document.getElementById("removeAll").onclick = function () {
     removeFromTrade(getActiveSlots(), 0, [], false)
@@ -216,9 +216,8 @@ document.getElementById("removeMetal").onclick = function () {
 };
 document.getElementById("removeItems").onclick = function () {
     removeFromTrade(getActiveSlots(), 0, ["Mann Co. Supply Crate Key", "Refined Metal", "Reclaimed Metal", "Scrap Metal"], false);
-};
-
-function addItems(inv) {
+}
+function addItems() {
     keys = document.getElementById("addKeys").value;
     metal = document.getElementById("addMetal").value;
     if (keys == "") {
@@ -230,7 +229,99 @@ function addItems(inv) {
         document.getElementById("addKeys").value = keys;
     }
     if (metal == "") {
-        document.getElementById("addMetal").value = 0.00;
+        document.getElementById("addMetal").value = 0;
         metal = 0;
+    }
+    else { //Ignore any digit after the tenths place and then write that number twice (24.795 -> 24.77) .99 is rounded up
+        metal = Math.trunc(metal * 100);
+        x = (metal % 100);
+        metal -= x;
+        x = (x - x % 10) / 10 * 11;
+        if (x == 99) { x++ };
+        metal = (x + metal) / 100;
+        document.getElementById("addMetal").value = metal;
+    }
+    //Convert ref into scrap
+    x = Math.trunc(metal);
+    metal = x * 9 + Math.trunc((metal - x) * 10);
+    //Get active inventory
+    let bob = w(function () {
+        if (g_ActiveUser == UserYou) {
+            return "you";
+        }
+        else {
+            return "them";
+        }
+    });
+    inv = countItems(bob(), false);
+    //See if the inventory has enough keys/metal
+    console.log(keys, metal);
+    console.log(inv.keys, countMetal(inv));
+    if (keys > inv.keys || metal > countMetal(inv)) {
+        console.log("Not enough keys/metal in inventory");
+    }
+    //Figure out what combination of metal to add
+    let metalToAdd = { ref: 0, rec: 0, scrap: 0 };
+    if ((metal - (metal % 9)) / 9 > inv.ref) {
+        metalToAdd.ref = inv.ref;
+    }
+    else {
+        metalToAdd.ref = (metal - (metal % 9)) / 9;
+    }
+    metal -= metalToAdd.ref * 9;
+    console.log(metalToAdd, countMetal(metalToAdd), metal);
+    if ((metal - (metal % 3)) / 3 > inv.rec) {
+        metalToAdd.rec = inv.rec;
+    }
+    else {
+        metalToAdd.rec = (metal - (metal % 3)) / 3;
+    }
+    metal -= metalToAdd.rec * 3;
+    console.log(metalToAdd, countMetal(metalToAdd), metal);
+    if (metal > inv.scrap) {
+        metalToAdd.scrap = inv.scrap;
+    }
+    else {
+        metalToAdd.scrap = metal;
+    }
+    metal -= metalToAdd.scrap;
+    console.log(metalToAdd, countMetal(metalToAdd), metal);
+    if (metal > 0) {
+        console.log("Could not make exact change.");
+        /*
+        if (metal < 3 && inv.rec > metalToAdd.rec) {
+            metalToAdd.rec++;
+            metal -= 3;
+        }
+        else {
+            metalToAdd.ref++;
+            metal -= 9;
+            if (metal < -3) {
+                mteal
+                metalToAdd.rec = 0;
+            }
+        }
+        */
+    }
+    //console.log(metalToAdd, countMetal(metalToAdd), metal);
+    let joe = w(function (count, itemName) {
+        let rgItems = g_ActiveUser.getInventory(440, 2).rgItemElements;
+        console.log(rgItems);
+        console.log(count);
+        while (count > 0) {
+            console.log(count);
+            let index = rgItems.length - 1;
+            while (rgItems[index].rgItem.name != itemName || rgItems[index].firstChild.style.display == "none") {
+                index--;
+            }
+            MoveItemToTrade(rgItems[index]);
+            count--;
+        }
+    });
+    if (metal == 0) {
+        joe(keys, "Mann Co. Supply Crate Key");
+        joe(metalToAdd.ref, "Refined Metal");
+        joe(metalToAdd.rec, "Reclaimed Metal");
+        joe(metalToAdd.scrap, "Scrap Metal");
     }
 }
