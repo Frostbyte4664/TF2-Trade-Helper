@@ -1,6 +1,9 @@
+/**
+ * Returns a content script function redefined as a window function. This allows the function to access variables defined by page scripts.
+ * @param {Function} func The content script function to be redefined in the window.
+ * @returns {window.Function} The new function that can interact with the window's variables.
+ */
 function w(func) {
-    //w(function) returns the same function redefined with a window.Function constructor.
-    //This allows functions to access variable defined in the window.
     fstr = func.toString();
     //Get arguments from the function in string form
     argstr = (fstr.substring(
@@ -26,42 +29,66 @@ function w(func) {
         fstr.lastIndexOf("}"));
     return window.Function(...args, fstr);
 }
-const hotkeys = w(function (e) {
-    if (e.target != document.querySelector("#filter_control") && e.target != document.querySelector("trade_offer_note")) {
-        if (e.key == "a") { InventoryPreviousPage(); }
-        else if (e.key == "d") { InventoryNextPage(); }
-        else if (e.key == "c") { ToggleReady(!UserYou.bReady); }
-        else if (e.key == "v") { ConfirmTradeOffer(); }
-        else if (e.key == "z") { DeclineTradeOffer(); }
-        else if (e.key == "t") { DismissTradeOfferWindow(); }
-        else if (e.key == "q") {
-            if (g_ActiveUser == UserYou) { //Switches between your inventory and their inventory
-                SelectInventoryFromUser(UserThem, g_ActiveInventory.appid, g_ActiveInventory.contextid);
-            }
-            else {
-                SelectInventoryFromUser(UserYou, g_ActiveInventory.appid, g_ActiveInventory.contextid);
-            }
-            UpdateDisplayForActiveUser();
-        }
+/**
+ * Counts the metal in an inventory and returns the total as scrap.
+ * @param {object} inv The inventory object with ref, rec, and scrap values.
+ * @returns {number} Total metal count of the inventory object in scrap.
+ */
+function countMetal(inv) {
+    return inv.ref * 9 + inv.rec * 3 + inv.scrap;
+}
+/**
+ * Returns a count of scrap as ref. (e.g. 15 -> 1.44)
+ * @param {number} scrap The scrap count to convert to ref.
+ * @returns {number} The scrap count expressed as ref.
+ */
+function toRef(scrap) {
+    return Math.trunc(scrap / 9 * 100) / 100;
+}
+/**
+ * Returns a pluralized item name and count. (e.g. plural("item", 10) -> "10 items")
+ * @param {string} name The name of the item to pluralize.
+ * @param {number} count The number of items there are.
+ * @returns {string} The number of item(s) and its pluralized form concatenated.
+ */
+function plural(name, count) {
+    if (count != 1) {
+        return count + ' ' + name + 's';
     }
-});
-const itemClick = w(function (e) {
-    if (!g_bReadOnly) {
-        let elItem = e.target.parentElement;
-        if (e.buttons == 1 && elItem && elItem.rgItem) {
-            for (x of Draggables.drags) {
-                x.destroy();
-            }
-            if (document.querySelector("#inventory_box").contains(elItem)) {
-                MoveItemToTrade(elItem);
-            }
-            else {
-                MoveItemToInventory(elItem);
-            }
-            CancelItemHover(elItem);
-        }
+    return count + ' ' + name;
+}
+/**
+ * Updates the displayed count of keys, ref, and items of a user's trade slots.
+ * @param {string} user The user whose count should be updated. Should be "you" or "them".
+ */
+function updateItemCount(user) {
+    let inv = countItems(user, true);
+    text = plural("key", inv.keys) + ", " + toRef(countMetal(inv)) + " ref" + ", " + plural("item", inv.items);
+    if (user == "you") {
+        document.getElementById("trade_yours").querySelector("h2").innerText = text;
     }
-});
+    else {
+        document.getElementById("trade_theirs").querySelectorAll("h2")[1].innerText = text;
+    }
+}
+/**
+ * Updates the displayed item count of the respective user if the trade slots have changed.
+ * @param {mutationList} mutationList The mutation to check for changed trade slots.
+ */
+function itemsChanged(mutationList) {
+    if (document.getElementById("your_slots").contains(mutationList[0].target)) { //If items changed in your inventory
+        updateItemCount("you");
+    }
+    else if (document.getElementById("their_slots").contains(mutationList[0].target)) { //If items changed in their inventory
+        updateItemCount("them");
+    }
+}
+/**
+ * Counts items in the specified user's inventory.
+ * @params {string} user Whose inventory to evaluate. Should be "you" or "them".
+ * @params {boolean} inTrade Count items inside (true) or outside (false) of the current trade.
+ * @returns {object} inv Object with numerical keys, ref, rec, scrap, and items properties.
+ */
 const countItems = w(function (user, inTrade) {
     let inventory;
     if (user == "you") {
@@ -95,28 +122,7 @@ const countItems = w(function (user, inTrade) {
     }
     return inv;
 });
-function countMetal(inv) { return inv.ref * 9 + inv.rec * 3 + inv.scrap }
-function toRef(scrap) { return Math.trunc(scrap / 9 * 100) / 100 }
-function plural(name, count) { if (count != 1) { return count + ' ' + name + 's' } return count + ' ' + name }
-function updateItemCount(user) {
-    let inv = countItems(user, true);
-    text = plural("key", inv.keys) + ", " + toRef(countMetal(inv)) + " ref" + ", " + plural("item", inv.items);
-    if (user == "you") {
-        document.getElementById("trade_yours").querySelector("h2").innerText = text;
-    }
-    else {
-        document.getElementById("trade_theirs").querySelectorAll("h2")[1].innerText = text;
-    }
-}
-function itemsChanged(mutationList) {
-    if (document.getElementById("your_slots").contains(mutationList[0].target)) { //If items changed in your inventory
-        updateItemCount("you");
-    }
-    else if (document.getElementById("their_slots").contains(mutationList[0].target)) { //If items changed in their inventory
-        updateItemCount("them");
-    }
-}
-function onLoad() {
+function onLoad() { //This would be an anonymous function in the following addEventListener, but that doesn't seem to work.
     let wOnLoad = w(function () { //For operations that use window variables
         Tutorial.EndTutorial(); //Close tutorial
         SelectInventory(440, 2); //Select TF2 Inventory
@@ -132,11 +138,48 @@ function onLoad() {
         }
     });
     wOnLoad();
-    document.addEventListener("keydown", hotkeys); //Initiate hotkeys
+    //Initiate hotkeys
+    const hotkeys = w(function (e) { //This would be an anonymous function, but that doesn't seem to work.
+        if (e.target.tagName != "INPUT") {
+            if (e.key == "a") { InventoryPreviousPage(); }
+            else if (e.key == "d") { InventoryNextPage(); }
+            else if (e.key == "c") { ToggleReady(!UserYou.bReady); }
+            else if (e.key == "v") { ConfirmTradeOffer(); }
+            else if (e.key == "z") { DeclineTradeOffer(); }
+            else if (e.key == "t") { DismissTradeOfferWindow(); }
+            else if (e.key == "q") {
+                if (g_ActiveUser == UserYou) { //Switches between your inventory and their inventory
+                    SelectInventoryFromUser(UserThem, g_ActiveInventory.appid, g_ActiveInventory.contextid);
+                }
+                else {
+                    SelectInventoryFromUser(UserYou, g_ActiveInventory.appid, g_ActiveInventory.contextid);
+                }
+                UpdateDisplayForActiveUser();
+            }
+        }
+    });
+    document.addEventListener("keydown", hotkeys);
     //Set up single click item add/remove
+    const itemClick = w(function (e) { //This would be an anonymous function, but that doesn't seem to work.
+        if (!g_bReadOnly) {
+            let elItem = e.target.parentElement;
+            if (e.buttons == 1 && elItem && elItem.rgItem) {
+                for (x of Draggables.drags) {
+                    x.destroy();
+                }
+                if (document.querySelector("#inventory_box").contains(elItem)) {
+                    MoveItemToTrade(elItem);
+                }
+                else {
+                    MoveItemToInventory(elItem);
+                }
+                CancelItemHover(elItem);
+            }
+        }
+    });
+    document.addEventListener("pointerdown", itemClick);
     document.querySelector("style").sheet.insertRule("#your_slots .item a.inventory_item_link, " +
         "#inventories .item a.inventory_item_link {cursor: pointer}", 0); //Change cursor to pointer when hovering item
-    document.addEventListener("pointerdown", itemClick);
     //Create observer to watch for item changes in the trade
     new MutationObserver(itemsChanged).observe(document.getElementById("trade_area"), { subtree: true, childList: true });
     //Make sure the metal/item counter updates after loading
@@ -217,9 +260,13 @@ document.getElementById("removeMetal").onclick = function () {
 document.getElementById("removeItems").onclick = function () {
     removeFromTrade(getActiveSlots(), 0, ["Mann Co. Supply Crate Key", "Refined Metal", "Reclaimed Metal", "Scrap Metal"], false);
 }
+
+
+
+
 function addItems() {
-    keys = document.getElementById("addKeys").value;
-    metal = document.getElementById("addMetal").value;
+    let keys = document.getElementById("addKeys").value;
+    let metal = document.getElementById("addMetal").value;
     if (keys == "") {
         document.getElementById("addKeys").value = 0;
         keys = 0;
@@ -233,16 +280,18 @@ function addItems() {
         metal = 0;
     }
     else { //Ignore any digit after the tenths place and then write that number twice (24.795 -> 24.77) .99 is rounded up
-        metal = Math.trunc(metal * 100);
-        x = (metal % 100);
+        metal = Math.trunc(metal * 100 + 0.1);
+        let x = (metal % 100);
         metal -= x;
         x = (x - x % 10) / 10 * 11;
-        if (x == 99) { x++ };
+        if (x == 99) {
+            x++
+        };
         metal = (x + metal) / 100;
         document.getElementById("addMetal").value = metal;
     }
     //Convert ref into scrap
-    x = Math.trunc(metal);
+    let x = Math.trunc(metal);
     metal = x * 9 + Math.trunc((metal - x) * 10);
     //Get active inventory
     let bob = w(function () {
