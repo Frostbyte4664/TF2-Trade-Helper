@@ -84,139 +84,13 @@ function itemsChanged(mutationList) {
     }
 }
 /**
- * Counts items in the specified user's inventory.
- * @params {string} user Whose inventory to evaluate. Should be "you" or "them".
- * @params {boolean} inTrade Count items inside (true) or outside (false) of the current trade.
- * @returns {object} inv Object with numerical keys, ref, rec, scrap, and items properties.
+ * Removes items with a small delay in between each item, because removing too many items at once breaks the page.
+ * @param {Object} slots Should be DOM Object #your_slots or #their_slots.
+ * @param {number} index The trade slot index start on. This slot and all subsequent will be evaluated.
+ * @param {Array} names String array of the item names to look for.
+ * @param {boolean} match True if matches should be removed from the trade or false if non-matches should be removed.
  */
-const countItems = w(function (user, inTrade) {
-    let inventory;
-    if (user == "you") {
-        inventory = UserYou.getInventory(440, 2).rgItemElements;
-    }
-    else {
-        inventory = UserThem.getInventory(440, 2).rgItemElements;
-    }
-    let inv = { keys: 0, ref: 0, rec: 0, scrap: 0, items: 0 }
-    for (var elItem of inventory) {
-        if (inTrade == (elItem.firstChild.style.display == "none")) { //If looking looking for items in trade and item is in trade
-            //Or if looking for items NOT in trade and item is NOT in trade
-            switch (elItem.rgItem.name) {
-                case "Mann Co. Supply Crate Key":
-                    inv.keys++;
-                    break;
-                case "Refined Metal":
-                    inv.ref++;
-                    break;
-                case "Reclaimed Metal":
-                    inv.rec++;
-                    break;
-                case "Scrap Metal":
-                    inv.scrap++;
-                    break;
-                default:
-                    inv.items++;
-                    break;
-            }
-        }
-    }
-    return inv;
-});
-function onLoad() { //This would be an anonymous function in the following addEventListener, but that doesn't seem to work.
-    let wOnLoad = w(function () { //For operations that use window variables
-        Tutorial.EndTutorial(); //Close tutorial
-        SelectInventory(440, 2); //Select TF2 Inventory
-        document.querySelector('.trade_partner_header').remove(); //Hides trade parter info at the top of the screen
-        //.remove() is redefined for some reason and must be called in the window
-        //Disable trade warnings
-        CModal.DismissActiveModal();
-        ToggleReady = function (ready) {
-            UserYou.bReady = ready;
-            GTradeStateManager.ToggleReady(ready);
-            UpdateReadyButtons();
-            document.getElementById('notready_tradechanged_message').style.display = 'none';
-        }
-    });
-    wOnLoad();
-    //Initiate hotkeys
-    const hotkeys = w(function (e) { //This would be an anonymous function, but that doesn't seem to work.
-        if (e.target.tagName != "INPUT") {
-            if (e.key == "a") { InventoryPreviousPage(); }
-            else if (e.key == "d") { InventoryNextPage(); }
-            else if (e.key == "c") { ToggleReady(!UserYou.bReady); }
-            else if (e.key == "v") { ConfirmTradeOffer(); }
-            else if (e.key == "z") { DeclineTradeOffer(); }
-            else if (e.key == "t") { DismissTradeOfferWindow(); }
-            else if (e.key == "q") {
-                if (g_ActiveUser == UserYou) { //Switches between your inventory and their inventory
-                    SelectInventoryFromUser(UserThem, g_ActiveInventory.appid, g_ActiveInventory.contextid);
-                }
-                else {
-                    SelectInventoryFromUser(UserYou, g_ActiveInventory.appid, g_ActiveInventory.contextid);
-                }
-                UpdateDisplayForActiveUser();
-            }
-        }
-    });
-    document.addEventListener("keydown", hotkeys);
-    //Set up single click item add/remove
-    const itemClick = w(function (e) { //This would be an anonymous function, but that doesn't seem to work.
-        if (!g_bReadOnly) {
-            let elItem = e.target.parentElement;
-            if (e.buttons == 1 && elItem && elItem.rgItem) {
-                for (x of Draggables.drags) {
-                    x.destroy();
-                }
-                if (document.querySelector("#inventory_box").contains(elItem)) {
-                    MoveItemToTrade(elItem);
-                }
-                else {
-                    MoveItemToInventory(elItem);
-                }
-                CancelItemHover(elItem);
-            }
-        }
-    });
-    document.addEventListener("pointerdown", itemClick);
-    document.querySelector("style").sheet.insertRule("#your_slots .item a.inventory_item_link, " +
-        "#inventories .item a.inventory_item_link {cursor: pointer}", 0); //Change cursor to pointer when hovering item
-    //Create observer to watch for item changes in the trade
-    new MutationObserver(itemsChanged).observe(document.getElementById("trade_area"), { subtree: true, childList: true });
-    //Make sure the metal/item counter updates after loading
-    setTimeout(function () {
-        updateItemCount("you");
-        updateItemCount("them");
-    }, 3000);
-}
-document.addEventListener("DOMContentLoaded", onLoad());
-
-
-//EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-getActiveSlots = w(function () {
-    let slots;
-    if (g_ActiveUser == UserYou) {
-        slots = document.querySelector("#your_slots");
-    }
-    else {
-        slots = document.querySelector("#their_slots");
-    }
-    return slots;
-});
-
-getItemName = w(function (elItem) {
-    return elItem.rgItem.name;
-});
-
-itemToInv = w(function (elItem) {
-    MoveItemToInventory(elItem);
-});
-
 function removeFromTrade(slots, index, names, match) {
-    /*Removes items (With a delay because removing too many items at once breaks the page)...
-     Within the specified trade slots (slots)
-     Starting at the specified slot index (index)
-     Look for items whose item names are in string array names (names)
-     Remove items with (true) or without (false) matching names (match)*/
     setTimeout(function () {
         if (slots.children[index].classList.contains("has_item")) {
             if (match == names.includes(getItemName(slots.children[index].firstChild.firstChild))) {
@@ -229,41 +103,9 @@ function removeFromTrade(slots, index, names, match) {
         }
     }, 75);
 }
-
-document.querySelector("#inventory_displaycontrols").innerHTML = "<h3>Add or Remove Items:</h3><br/>" +
-    "<div class='mom'>" +
-    "Keys: <input id='addKeys' type='number' min='0' placeholder='1' step='1' class='filter_search_box'/>" +
-    "Ref: <input id='addMetal' type='number' min='0' placeholder='1.11' step='0.01' class='filter_search_box'/>" +
-    "<button id='addItems' class='pagecontrol_element pagebtn'>+</button><br/>" +
-    "</div><div class='mom'>" +
-    "Remove:<button id='removeAll' class='pagecontrol_element pagebtn'>All</button>" +
-    "<button id='removeKeys' class='pagecontrol_element pagebtn'>Keys</button>" +
-    "<button id='removeMetal' class='pagecontrol_element pagebtn'>Metal</button>" +
-    "<button id='removeItems' class='pagecontrol_element pagebtn'>Items</button>"
-"</div>"
-document.querySelector("style").sheet.insertRule(".mom{display:flex;align-items:center}", 0);
-document.querySelector("style").sheet.insertRule(".mom *{flex-grow:1;margin:5px}", 0);
-
-
-document.getElementById("addItems").onclick = function () {
-    addItems();
-};
-document.getElementById("removeAll").onclick = function () {
-    removeFromTrade(getActiveSlots(), 0, [], false)
-};
-document.getElementById("removeKeys").onclick = function () {
-    removeFromTrade(getActiveSlots(), 0, ["Mann Co. Supply Crate Key"], true)
-};
-document.getElementById("removeMetal").onclick = function () {
-    removeFromTrade(getActiveSlots(), 0, ["Refined Metal", "Reclaimed Metal", "Scrap Metal"], true);
-};
-document.getElementById("removeItems").onclick = function () {
-    removeFromTrade(getActiveSlots(), 0, ["Mann Co. Supply Crate Key", "Refined Metal", "Reclaimed Metal", "Scrap Metal"], false);
-}
-
-
-
-
+/**
+ * Formats the keys and metal inputs to acceptable values and then adds the specified number of them to the trade
+ */
 function addItems() {
     let keys = document.getElementById("addKeys").value;
     let metal = document.getElementById("addMetal").value;
@@ -279,7 +121,7 @@ function addItems() {
         document.getElementById("addMetal").value = 0;
         metal = 0;
     }
-    else { //Ignore any digit after the tenths place and then write that number twice (24.795 -> 24.77) .99 is rounded up
+    else { //Ignore any digit after the tenths place and then write that number twice (24.795 -> 24.77) .9 is rounded up
         metal = Math.trunc(metal * 100 + 0.1);
         let x = (metal % 100);
         metal -= x;
@@ -374,3 +216,159 @@ function addItems() {
         joe(metalToAdd.scrap, "Scrap Metal");
     }
 }
+/**
+ * Counts items in the specified user's inventory.
+ * @params {string} user Whose inventory to evaluate. Should be "you" or "them".
+ * @params {boolean} inTrade Count items inside (true) or outside (false) of the current trade.
+ * @returns {object} inv Object with numerical keys, ref, rec, scrap, and items properties.
+ */
+const countItems = w(function (user, inTrade) {
+    let inventory;
+    if (user == "you") {
+        inventory = UserYou.getInventory(440, 2).rgItemElements;
+    }
+    else {
+        inventory = UserThem.getInventory(440, 2).rgItemElements;
+    }
+    let inv = { keys: 0, ref: 0, rec: 0, scrap: 0, items: 0 }
+    for (var elItem of inventory) {
+        if (inTrade == (elItem.firstChild.style.display == "none")) { //If looking looking for items in trade and item is in trade
+            //Or if looking for items NOT in trade and item is NOT in trade
+            switch (elItem.rgItem.name) {
+                case "Mann Co. Supply Crate Key":
+                    inv.keys++;
+                    break;
+                case "Refined Metal":
+                    inv.ref++;
+                    break;
+                case "Reclaimed Metal":
+                    inv.rec++;
+                    break;
+                case "Scrap Metal":
+                    inv.scrap++;
+                    break;
+                default:
+                    inv.items++;
+                    break;
+            }
+        }
+    }
+    return inv;
+});
+/**
+ * Returns the DOM Object of the active user's trade slots.
+ * @returns {object} The active user's trade slots.
+ */
+const getActiveSlots = w(function () {
+    return document.querySelector((g_ActiveUser == UserYou) ? "#your_slots" : "#their_slots");
+});
+/**
+ * Returns the item name of an item from its DOM Object counterpart.
+ * @params {object} elItem The item object to retrieve the name of.
+ * @returns {String} The name of the item within elItem.
+ */
+const getItemName = w(function (elItem) {
+    return elItem.rgItem.name;
+});
+/**
+ * Moves the specified item from the trade slots to the user's inventory.
+ * @params {object} elItem The item object to move to inventory.
+ */
+const itemToInv = w(function (elItem) {
+    MoveItemToInventory(elItem);
+});
+function onLoad() { //This would be an anonymous function in the following addEventListener, but that doesn't seem to work.
+    let wOnLoad = w(function () { //For operations that use window variables
+        Tutorial.EndTutorial(); //Close tutorial
+        SelectInventory(440, 2); //Select TF2 Inventory
+        document.querySelector('.trade_partner_header').remove(); //Hides trade parter info at the top of the screen
+        //.remove() is redefined for some reason and must be called in the window
+        //Disable trade warnings
+        CModal.DismissActiveModal();
+        ToggleReady = function (ready) {
+            UserYou.bReady = ready;
+            GTradeStateManager.ToggleReady(ready);
+            UpdateReadyButtons();
+            document.getElementById('notready_tradechanged_message').style.display = 'none';
+        }
+    });
+    wOnLoad();
+    //Initiate hotkeys
+    const hotkeys = w(function (e) { //This would be an anonymous function, but that doesn't seem to work.
+        if (e.target.tagName != "INPUT") {
+            if (e.key == "a") { InventoryPreviousPage(); }
+            else if (e.key == "d") { InventoryNextPage(); }
+            else if (e.key == "c") { ToggleReady(!UserYou.bReady); }
+            else if (e.key == "v") { ConfirmTradeOffer(); }
+            else if (e.key == "z") { DeclineTradeOffer(); }
+            else if (e.key == "t") { DismissTradeOfferWindow(); }
+            else if (e.key == "q") {
+                if (g_ActiveUser == UserYou) { //Switches between your inventory and their inventory
+                    SelectInventoryFromUser(UserThem, g_ActiveInventory.appid, g_ActiveInventory.contextid);
+                }
+                else {
+                    SelectInventoryFromUser(UserYou, g_ActiveInventory.appid, g_ActiveInventory.contextid);
+                }
+                UpdateDisplayForActiveUser();
+            }
+        }
+    });
+    document.addEventListener("keydown", hotkeys);
+    //Set up single click item add/remove
+    const itemClick = w(function (e) { //This would be an anonymous function, but that doesn't seem to work.
+        if (!g_bReadOnly) {
+            let elItem = e.target.parentElement;
+            if (e.buttons == 1 && elItem && elItem.rgItem) {
+                for (x of Draggables.drags) {
+                    x.destroy();
+                }
+                if (document.querySelector("#inventory_box").contains(elItem)) {
+                    MoveItemToTrade(elItem);
+                }
+                else {
+                    MoveItemToInventory(elItem);
+                }
+                CancelItemHover(elItem);
+            }
+        }
+    });
+    document.addEventListener("pointerdown", itemClick);
+    document.querySelector("style").sheet.insertRule("#your_slots .item a.inventory_item_link, " +
+        "#inventories .item a.inventory_item_link {cursor: pointer}", 0); //Change cursor to pointer when hovering item
+    //Create observer to watch for item changes in the trade
+    new MutationObserver(itemsChanged).observe(document.getElementById("trade_area"), { subtree: true, childList: true });
+    //Set up "Add or Remove Items" panel
+    document.querySelector("#inventory_displaycontrols").innerHTML = "<h3>Add or Remove Items:</h3><br/>" +
+        "<div class='mom'>" +
+        "Keys: <input id='addKeys' type='number' min='0' placeholder='1' step='1' class='filter_search_box'/>" +
+        "Ref: <input id='addMetal' type='number' min='0' placeholder='1.11' step='0.01' class='filter_search_box'/>" +
+        "<button id='addItems' class='pagecontrol_element pagebtn'>+</button><br/>" +
+        "</div><div class='mom'>" +
+        "Remove:<button id='removeAll' class='pagecontrol_element pagebtn'>All</button>" +
+        "<button id='removeKeys' class='pagecontrol_element pagebtn'>Keys</button>" +
+        "<button id='removeMetal' class='pagecontrol_element pagebtn'>Metal</button>" +
+        "<button id='removeItems' class='pagecontrol_element pagebtn'>Items</button></div>";
+    document.querySelector("style").sheet.insertRule(".mom{display:flex;align-items:center}", 0);
+    document.querySelector("style").sheet.insertRule(".mom *{flex-grow:1;margin:5px}", 0);
+    document.getElementById("addItems").onclick = function () {
+        addItems();
+    };
+    document.getElementById("removeAll").onclick = function () {
+        removeFromTrade(getActiveSlots(), 0, [], false)
+    };
+    document.getElementById("removeKeys").onclick = function () {
+        removeFromTrade(getActiveSlots(), 0, ["Mann Co. Supply Crate Key"], true)
+    };
+    document.getElementById("removeMetal").onclick = function () {
+        removeFromTrade(getActiveSlots(), 0, ["Refined Metal", "Reclaimed Metal", "Scrap Metal"], true);
+    };
+    document.getElementById("removeItems").onclick = function () {
+        removeFromTrade(getActiveSlots(), 0, ["Mann Co. Supply Crate Key", "Refined Metal", "Reclaimed Metal", "Scrap Metal"], false);
+    }
+    //Make sure the metal/item counter updates after loading
+    setTimeout(function () {
+        updateItemCount("you");
+        updateItemCount("them");
+    }, 3000);
+}
+document.addEventListener("DOMContentLoaded", onLoad());
