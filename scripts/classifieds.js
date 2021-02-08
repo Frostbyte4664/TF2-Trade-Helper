@@ -4,18 +4,26 @@ function onLoad() { //This would be an anonymous function in the following addEv
     let buyers = document.querySelectorAll(".col-md-6")[1];
 
     if (item && sellers && buyers) {
-        item = item.dataset;
-        let text = "<h1>bp.tf Price: <b>" + item.p_bptf + "</b></a><br/>";
-
+        item = item.dataset.p_bptf;
+        let text = "<h3 style='margin-right:25%;margin-bottom:0'>This Page:</h3><h1 style='margin-top:0'>";
+        let itemsmatch = true;
+        for (var x of document.querySelectorAll(".item")) {
+            if (x.dataset.p_bptf != item) {
+                itemsmatch = false;
+            }
+        }
+        if (itemsmatch == true) {
+            text += (item ? "bp.tf Price: <b>" + item + "</b>" : "<b>Unpriced</b>") + "<br/>";
+        }
         if (sellers.querySelector(".item")) {
             item = sellers.querySelector(".item").dataset
-            text += "<a href='" + item.listing_offers_url + "'>";
-            text += "Lowest Seller: <b>" + item.listing_price + "</b></a><br/>";
+            text += "<a href='" + item.listing_offers_url + "'>"
+                + "Lowest Seller: <b>" + item.listing_price + "</b></a><br/>";
             if (sellers.querySelector(".fa-flash")) {
                 item = sellers.querySelector(".fa-flash").parentElement.parentElement.parentElement.parentElement.parentElement
-                    .firstElementChild.firstElementChild.dataset
-                text += "<a href='" + item.listing_offers_url + "'>";
-                text += "Lowest Bot Seller: <b>" + item.listing_price + "</b></a><br/>";
+                    .firstElementChild.firstElementChild.dataset;
+                text += "<a href='" + item.listing_offers_url + "'>"
+                    + "Lowest Bot Seller: <b>" + item.listing_price + "</b></a><br/>";
             }
             else {
                 text += "No Bot Sellers<br/>";
@@ -24,16 +32,15 @@ function onLoad() { //This would be an anonymous function in the following addEv
         else {
             text += "No Sellers<br/>";
         }
-
         if (buyers.querySelector(".item")) {
             item = buyers.querySelector(".item").dataset
-            text += "<a href='" + item.listing_offers_url + "'>";
-            text += "Highest Buyer: <b>" + item.listing_price + "</b></a><br/>";
+            text += "<a href='" + item.listing_offers_url + "'>"
+                + "Highest Buyer: <b>" + item.listing_price + "</b></a><br/>";
             if (buyers.querySelector(".fa-flash")) {
                 item = buyers.querySelector(".fa-flash").parentElement.parentElement.parentElement.parentElement.parentElement
-                    .firstElementChild.firstElementChild.dataset
-                text += "<a href='" + item.listing_offers_url + "'>";
-                text += "Highest Bot Buyer: <b>" + item.listing_price + "</b></a>";
+                    .firstElementChild.firstElementChild.dataset;
+                text += "<a href='" + item.listing_offers_url + "'>"
+                    + "Highest Bot Buyer: <b>" + item.listing_price + "</b></a>";
             }
             else {
                 text += "No Bot Buyers";
