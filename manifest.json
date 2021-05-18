@@ -3,6 +3,12 @@
   "name": "TF2 Trade Helper",
   "version": "0.2",
 
+  "permissions": [ //Only for background.js
+    "menus",
+    "activeTab",
+    "<all_urls>"
+  ],
+
   "icons": {
     "48": "images/icon.svg",
     "96": "images/icon.svg"
@@ -17,5 +23,9 @@
       "matches": [ "*://backpack.tf/classifieds*" ],
       "js": [ "scripts/classifieds.js" ]
     }
-  ]
+  ],
+
+  "background": {
+    "scripts": [ "scripts/background.js" ]
+  }
 }
