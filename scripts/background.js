@@ -50,7 +50,7 @@ function classifieds(item) {
     //For stntrading.eu
     let url = "https://backpack.tf/classifieds?item=";
     //Item Name
-    url += item.name;
+    url += item.attributes.name.value;
     //Tradable
     url += "&tradable=1";
     //Craftable
@@ -61,7 +61,7 @@ function classifieds(item) {
         url += "&craftable=1";
     }
     //Australium
-    if (item.attributes.itemname.value.includes("Australium") && item.name != "Australium Gold") {
+    if (item.attributes.itemname.value.includes("Australium") && item.attributes.name.value != "Australium Gold") {
         url += "&australium=1";
     }
     else {
